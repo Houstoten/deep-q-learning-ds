@@ -30,7 +30,7 @@ class Unit:
     self.pos = pos
 
 def generate_data(n):
-    battlemap = np.array([np.random.uniform(low=0, high=1, size=(n,)) for i in range(n)])
+    battlemap = np.array([np.random.uniform(low=0, high=1 - i / n, size=(n,)) for i in range(n)])
     enemies, enemymap = generate_enemies(n)
 
     return (battlemap, enemies, enemymap)
@@ -52,39 +52,7 @@ BLUE1 = (0, 0, 255)
 BLUE2 = (0, 100, 255)
 BLACK = (0,0,0)
 
-class Direction(Enum):
-    RIGHT = 1
-    LEFT = 2
-    UP = 3
-    DOWN = 4
-
-# friendly_unit = Unit(10, 10, Pos(50, 50))
-
-# battlemap, enemies = generate_data(n) 
-
-# clock = pygame.time.Clock()
-
-# while active:
-#    window.fill((0, 0, 0))
-#    for event in pygame.event.get():
-#       if event.type == pygame.QUIT:
-#          active = False
-
-#    pygame.draw.rect(window, (0,0,255), pygame.Rect(friendly_unit.pos.y * scale, friendly_unit.pos.x * scale, scale, scale))
-
-#    for enemy in enemies[:1]:
-#         pygame.draw.rect(window, (255, 1 / (255 * enemy.threat), 255 * enemy.threat), pygame.Rect(enemy.pos.y * scale, enemy.pos.x * scale, scale, scale))
-# #    pygame.draw.circle(window,red,(circleX,circleY),radius) # DRAW CIRCLE
-
-#    pygame.display.update()
-#    pygame.display.flip()
-#    clock.tick(10)
-# #    friendly_unit.pos.x -= 1
-#    friendly_unit.pos.y -= 1
-
-
 class BattlefieldAI:
-
     def __init__(self,  w=500, h=500):
         self.w = w
         self.h = h
@@ -93,7 +61,7 @@ class BattlefieldAI:
         self.battlemap = battlemap
         # self.friendly_unit = Unit(100, 10, Pos(40, 40))
         # init display
-        # self.display = pygame.display.set_mode((self.w, self.h))
+        self.display = pygame.display.set_mode((self.w, self.h))
         pygame.display.set_caption('Battlefield')
         self.score = 0
         self.clock = pygame.time.Clock()
@@ -116,40 +84,33 @@ class BattlefieldAI:
             return reward, game_over, self.score
 
         pos_decay = self.battlemap[self.friendly_unit.pos.x][self.friendly_unit.pos.y]
-        self.friendly_unit.health -= 0.5 
+        self.friendly_unit.health -= 2 * pos_decay
         
         # 3. check if game over
         reward = 0
         game_over = False
         if self.friendly_unit.health < 0:
             game_over = True
-            reward = -1
+            reward = -10
             return reward, game_over, self.score
 
         # 4. check enemy or just move
-        index, result = next(
+        index, enemy = next(
             ((index, enemy) for (index, enemy) in enumerate(self.enemies) if enemy.pos.x == self.friendly_unit.pos.x and enemy.pos.y == self.friendly_unit.pos.y and enemy.health > 0),
             (None, None)
         )
 
-        if result is not None:
-            # result.health -= self.friendly_unit.damage
-            result.health = 0
-            self.enemies[index] = result
-            # self.friendly_unit.health -= result.damage
+        if enemy is not None:
+            enemy.health = 0
+            self.enemies[index] = enemy
+
             self.score += 1
-            # reward = 10 * result.threat
-            reward = 1
+            reward = 100
         else:
-            reward = -0.1
-            # reward = -pos_decay
-            # reward = 0
+            reward = -10
 
-        # 5. update ui and clock
-
-        # temp
-        # self._update_ui()
-        # self.clock.tick(100)
+        self._update_ui()
+        self.clock.tick(100)
 
         # 6. return game over and score
         print("Health: ", self.friendly_unit.health, " Score: ", self.score, end = "\r")
@@ -193,18 +154,3 @@ class BattlefieldAI:
             y -= 1
 
         if not self.is_collision(Pos(x, y)): self.friendly_unit.pos = Pos(x, y)
-
-# if __name__ == '__main__':
-#     game = BattlefieldAI()
-    
-#     # game loop
-#     while True:
-#         reward, game_over, score = game.play_step()
-        
-#         if game_over == True:
-#             break
-        
-#     print('Final Score', score)
-        
-        
-#     pygame.quit()

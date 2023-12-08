@@ -18,7 +18,7 @@ class Agent:
         self.epsilon = 0 # randomness
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(12, 256, 4)
+        self.model = Linear_QNet(8, 256, 4)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
 
@@ -28,57 +28,77 @@ class Agent:
         point_r = Pos(unit.pos.x + 1, unit.pos.y)
         point_u = Pos(unit.pos.x, unit.pos.y - 1)
         point_d = Pos(unit.pos.x, unit.pos.y + 1)
-        
-        dir_l = game.direction == Direction.LEFT
-        dir_r = game.direction == Direction.RIGHT
-        dir_u = game.direction == Direction.UP
-        dir_d = game.direction == Direction.DOWN
+        enemy = list(filter(lambda enemy: enemy.health > 0, game.enemies))[0]
 
-        acc_x = [0, 0]
-        for enemy in game.enemies:
-            acc_x = [acc_x[0] + enemy.health, acc_x[1]] if enemy.pos.x < game.friendly_unit.pos.x else [acc_x[0], acc_x[1] + enemy.health]
+        # acc_x = [0, 0]
+        # for enemy in game.enemies:
+        #     acc_x = [acc_x[0] + enemy.health, acc_x[1]] if enemy.pos.x < game.friendly_unit.pos.x else [acc_x[0], acc_x[1] + enemy.health]
 
-        acc_y = [0, 0]
-        for enemy in game.enemies:
-            acc_y = [acc_y[0] + enemy.health, acc_y[1]] if enemy.pos.y < game.friendly_unit.pos.y else [acc_y[0], acc_y[1] + enemy.health]
+        # acc_y = [0, 0]
+        # for enemy in game.enemies:
+        #     acc_y = [acc_y[0] + enemy.health, acc_y[1]] if enemy.pos.y < game.friendly_unit.pos.y else [acc_y[0], acc_y[1] + enemy.health]
+
+
 
         state = [
             # Danger straight
-            (dir_r and game.is_collision(point_r)) or 
-            (dir_l and game.is_collision(point_l)) or 
-            (dir_u and game.is_collision(point_u)) or 
-            (dir_d and game.is_collision(point_d)),
+            (game.is_collision(point_r)),
+            (game.is_collision(point_l)),
+            (game.is_collision(point_u)),
+            (game.is_collision(point_d)),
+
+#####
+            # (game.battlemap[point_r.x][point_r.y] > 0.5 if not  game.is_collision(point_r) else 0),
+            # (game.battlemap[point_l.x][point_l.y] > 0.5 if not  game.is_collision(point_l) else 0),
+            # (game.battlemap[point_u.x][point_u.y] > 0.5 if not  game.is_collision(point_u) else 0),
+            # (game.battlemap[point_d.x][point_d.y] > 0.5 if not  game.is_collision(point_d) else 0),
+
+            # (game.enemymap[point_r.x][point_r.y]*10 < game.friendly_unit.health if not game.is_collision(point_r) else 0),
+            # (game.enemymap[point_l.x][point_l.y]*10 < game.friendly_unit.health if not  game.is_collision(point_l) else 0),
+            # (game.enemymap[point_u.x][point_u.y]*10 < game.friendly_unit.health if not  game.is_collision(point_u) else 0),
+            # (game.enemymap[point_d.x][point_d.y]*10 < game.friendly_unit.health if not  game.is_collision(point_d) else 0),
+#####
 
             # Danger bottom
-            (dir_l and game.is_collision(point_r)) or 
-            (dir_r and game.is_collision(point_l)) or 
-            (dir_d and game.is_collision(point_u)) or 
-            (dir_u and game.is_collision(point_d)),
+            # (dir_l and game.is_collision(point_r)) or 
+            # (dir_r and game.is_collision(point_l)) or 
+            # (dir_d and game.is_collision(point_u)) or 
+            # (dir_u and game.is_collision(point_d)),
 
-            # Danger right
-            (dir_u and game.is_collision(point_r)) or 
-            (dir_d and game.is_collision(point_l)) or 
-            (dir_l and game.is_collision(point_u)) or 
-            (dir_r and game.is_collision(point_d)),
+            # # Danger right
+            # (dir_u and game.is_collision(point_r)) or 
+            # (dir_d and game.is_collision(point_l)) or 
+            # (dir_l and game.is_collision(point_u)) or 
+            # (dir_r and game.is_collision(point_d)),
 
-            # Danger left
-            (dir_d and game.is_collision(point_r)) or 
-            (dir_u and game.is_collision(point_l)) or 
-            (dir_r and game.is_collision(point_u)) or 
-            (dir_l and game.is_collision(point_d)),
+            # # Danger left
+            # (dir_d and game.is_collision(point_r)) or 
+            # (dir_u and game.is_collision(point_l)) or 
+            # (dir_r and game.is_collision(point_u)) or 
+            # (dir_l and game.is_collision(point_d)),
 
             
             # Move direction
-            dir_l,
-            dir_r,
-            dir_u,
-            dir_d, 
+            # dir_l,
+            # dir_r,
+            # dir_u,
+            # dir_d, 
 
             # Enemy health location fraction
-            acc_x[0] / max(np.sum(acc_x), 1),
-            acc_x[1] / max(np.sum(acc_x), 1),
-            acc_y[0] / max(np.sum(acc_y), 1),
-            acc_y[1] / max(np.sum(acc_y), 1),
+            # acc_x[0] > acc_x[1],
+            # acc_x[0] < acc_x[1],
+            # acc_y[0] > acc_y[1],
+            # acc_y[0] < acc_y[1],
+
+            # acc_x[0] / max(np.sum(acc_x), 1),
+            # acc_x[1] / max(np.sum(acc_x), 1),
+            # acc_y[0] / max(np.sum(acc_y), 1),
+            # acc_y[1] / max(np.sum(acc_y), 1),
+
+            enemy.pos.x < unit.pos.x,  # food left
+            enemy.pos.x > unit.pos.x,  # food right
+            enemy.pos.y < unit.pos.y,  # food up
+            enemy.pos.y > unit.pos.y  # food down
            ]
 
         return np.array(state, dtype=float)
