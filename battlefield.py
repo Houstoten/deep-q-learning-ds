@@ -100,7 +100,7 @@ class BattlefieldAI:
         self.reset()
 
     def reset(self):
-        self.friendly_unit = Unit(30, 10, Pos(10, 10))
+        self.friendly_unit = Unit(300, 10, Pos(10, 10))
         self.frame_iteration = 0
         self.score = 0
         self.enemies, self.enemymap = generate_enemies(n)
@@ -144,7 +144,7 @@ class BattlefieldAI:
 
         # temp
         self._update_ui()
-        # self.clock.tick(100)
+        self.clock.tick(20)
 
         # 6. return game over and score
         print("Health: ", self.friendly_unit.health, " Score: ", self.score, end = "\r")
