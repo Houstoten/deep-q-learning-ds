@@ -2,7 +2,7 @@ import torch
 import random
 import numpy as np
 from collections import deque
-from battlefield import Direction, BattlefieldAI, Pos
+from battlefield_train import Direction, BattlefieldAI, Pos
 from model import Linear_QNet, QTrainer
 from functools import reduce
 from helper import plot
@@ -18,7 +18,7 @@ class Agent:
         self.epsilon = 0 # randomness
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(8, 256, 4)
+        self.model = Linear_QNet(12, 256, 4)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
 
@@ -28,7 +28,9 @@ class Agent:
         point_r = Pos(unit.pos.x + 1, unit.pos.y)
         point_u = Pos(unit.pos.x, unit.pos.y - 1)
         point_d = Pos(unit.pos.x, unit.pos.y + 1)
-        enemy = list(filter(lambda enemy: enemy.health > 0, game.enemies))[0]
+
+        sq_radius = 15
+        enemies = list(filter(lambda enemy: enemy.health > 0 and abs(enemy.pos.x - unit.pos.x) < sq_radius and abs(enemy.pos.y - unit.pos.y) < sq_radius, game.enemies))
 
         # acc_x = [0, 0]
         # for enemy in game.enemies:
@@ -45,15 +47,11 @@ class Agent:
 
         bm_w_min = min([bm_w_r, bm_w_l, bm_w_u, bm_w_d])
 
-
-
-
         state = [
-            # Danger straight
-            # (game.is_collision(point_r)),
-            # (game.is_collision(point_l)),
-            # (game.is_collision(point_u)),
-            # (game.is_collision(point_d)),
+            (game.is_collision(point_r)),
+            (game.is_collision(point_l)),
+            (game.is_collision(point_u)),
+            (game.is_collision(point_d)),
 
             bm_w_r == bm_w_min and bm_w_r != -1,
             bm_w_l == bm_w_min and bm_w_l != -1,
@@ -108,10 +106,10 @@ class Agent:
             # acc_y[0] / max(np.sum(acc_y), 1),
             # acc_y[1] / max(np.sum(acc_y), 1),
 
-            enemy.pos.x < unit.pos.x,  # food left
-            enemy.pos.x > unit.pos.x,  # food right
-            enemy.pos.y < unit.pos.y,  # food up
-            enemy.pos.y > unit.pos.y  # food down
+            enemies[0].pos.x < unit.pos.x if len(enemies) > 0 else 0,  # food left
+            enemies[0].pos.x > unit.pos.x if len(enemies) > 0 else 0,  # food right
+            enemies[0].pos.y < unit.pos.y if len(enemies) > 0 else 0,  # food up
+            enemies[0].pos.y > unit.pos.y if len(enemies) > 0 else 0,  # food down
            ]
 
         return np.array(state, dtype=float)

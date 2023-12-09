@@ -5,7 +5,7 @@ from battlefield import generate_data, generate_enemies, Unit
 
 
 model = Linear_QNet(8, 256, 4)
-model.load_state_dict(torch.load('./model/model.pth'))
+model.load_state_dict(torch.load('./model.pth'))
 model.eval()
 
 from battlefield import BattlefieldAI, Pos
@@ -34,31 +34,34 @@ def get_state(game, unit):
         enemy.pos.x < unit.pos.x,  # food left
         enemy.pos.x > unit.pos.x,  # food right
         enemy.pos.y < unit.pos.y,  # food up
-        enemy.pos.y > unit.pos.y  # food down
+        enemy.pos.y > unit.pos.y,  # food down
     ]
 
     return np.array(state, dtype=float)
 
 def play():
-    n = 30
+    n = 80
 
     battlemap, _, _ = generate_data(n)
     enemies, _ = generate_enemies(n)
-    allies = [Unit(30, 10, Pos(0, 0)), Unit(30, 10, Pos(n-5, n-5))]
-    battle = BattlefieldAI(n, battlemap, enemies, allies)
+    allies = [Unit(30, 10, Pos(0, 0)), Unit(100, 5, Pos(n-3, n-3)), Unit(300, 10, Pos(0, n-3)), Unit(300, 20, Pos(n-3, 0))]
+    battle = BattlefieldAI(n, battlemap, enemies, [])
 
-    while(len(list(filter(lambda allie: allie.health > 0, allies)))):
+    for i, allie in enumerate(allies):
+        battle.allies = allies[:i]
 
-        for allie in battle.allies:
-            state = get_state(battle, allie)
+        while(len(list(filter(lambda allie: allie.health > 0, battle.allies)))):
 
-            pred = model(torch.tensor(state, dtype=torch.float))
+            for allie in battle.allies:
+                state = get_state(battle, allie)
 
-            max_value = max(pred)
-            pred_ = [1 if value == max_value else 0 for value in pred]
+                pred = model(torch.tensor(state, dtype=torch.float))
 
-            reward, done, score = battle.play_step(pred_, allie)
-        battle.tick_clock()
+                max_value = max(pred)
+                pred_ = [1 if value == max_value else 0 for value in pred]
+
+                reward, done, score = battle.play_step(pred_, allie)
+            battle.tick_clock()
 
 if __name__ == '__main__':
     play()
