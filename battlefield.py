@@ -41,7 +41,7 @@ def generate_enemies(n):
     return enemies, enemymap
 
 
-# window = pygame.display.set_mode((510,510))
+window = pygame.display.set_mode((510,510))
 active = True
 n = 20
 scale = 500 / n
@@ -93,7 +93,7 @@ class BattlefieldAI:
         self.battlemap = battlemap
         # self.friendly_unit = Unit(100, 10, Pos(40, 40))
         # init display
-        # self.display = pygame.display.set_mode((self.w, self.h))
+        self.display = pygame.display.set_mode((self.w, self.h))
         pygame.display.set_caption('Battlefield')
         self.score = 0
         self.clock = pygame.time.Clock()
@@ -110,13 +110,8 @@ class BattlefieldAI:
         # 1. collect user input
         self._move(action) # update the head
 
-        if self.is_collision():
-            game_over = True
-            reward = -10
-            return reward, game_over, self.score
-
         pos_decay = self.battlemap[self.friendly_unit.pos.x][self.friendly_unit.pos.y]
-        self.friendly_unit.health -= 0.5 
+        self.friendly_unit.health -= pos_decay / 3
         
         # 3. check if game over
         reward = 0
@@ -133,22 +128,22 @@ class BattlefieldAI:
         )
 
         if result is not None:
-            # result.health -= self.friendly_unit.damage
-            result.health = 0
+            result.health -= self.friendly_unit.damage
+            # result.health = 0
             self.enemies[index] = result
-            # self.friendly_unit.health -= result.damage
+            self.friendly_unit.health -= result.damage
             self.score += 1
             # reward = 10 * result.threat
             reward = 1
         else:
-            reward = -0.1
-            # reward = -pos_decay
+            # reward = -0.1
+            reward = -1 -pos_decay
             # reward = 0
 
         # 5. update ui and clock
 
         # temp
-        # self._update_ui()
+        self._update_ui()
         # self.clock.tick(100)
 
         # 6. return game over and score
