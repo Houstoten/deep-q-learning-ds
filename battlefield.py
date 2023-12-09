@@ -190,4 +190,8 @@ class BattlefieldAI:
         else: 
             y -= 1
 
-        if not self.is_collision(allie, Pos(x, y)): allie.pos = Pos(x, y)
+        if(self.is_collision(allie, Pos(x, y))):
+            return True
+
+        allie.pos = Pos(x, y)
+        return False

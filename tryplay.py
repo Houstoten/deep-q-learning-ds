@@ -4,8 +4,8 @@ from model import Linear_QNet
 from battlefield import generate_data, generate_enemies, Unit
 
 
-model = Linear_QNet(8, 256, 4)
-model.load_state_dict(torch.load('./model.pth'))
+model = Linear_QNet(12, 256, 4)
+model.load_state_dict(torch.load('./model/model.pth'))
 model.eval()
 
 from battlefield import BattlefieldAI, Pos
@@ -15,7 +15,9 @@ def get_state(game, unit):
     point_r = Pos(unit.pos.x + 1, unit.pos.y)
     point_u = Pos(unit.pos.x, unit.pos.y - 1)
     point_d = Pos(unit.pos.x, unit.pos.y + 1)
-    enemy = list(filter(lambda enemy: enemy.health > 0, game.enemies))[0]
+
+    sq_radius = 15
+    enemies = list(filter(lambda enemy: enemy.health > 0 and abs(enemy.pos.x - unit.pos.x) < sq_radius and abs(enemy.pos.y - unit.pos.y) < sq_radius, game.enemies))
 
     bm_w_r = game.battlemap[point_r.x][point_r.y] if not game.is_collision(unit, point_r) else -1
     bm_w_l = game.battlemap[point_l.x][point_l.y] if not game.is_collision(unit, point_l) else -1
@@ -26,15 +28,20 @@ def get_state(game, unit):
 
     state = [
 
+        (game.is_collision(unit, point_r)),
+        (game.is_collision(unit, point_l)),
+        (game.is_collision(unit, point_u)),
+        (game.is_collision(unit, point_d)),
+
         bm_w_r == bm_w_min and bm_w_r != -1,
         bm_w_l == bm_w_min and bm_w_l != -1,
         bm_w_u == bm_w_min and bm_w_u != -1,
         bm_w_d == bm_w_min and bm_w_d != -1,
 
-        enemy.pos.x < unit.pos.x,  # food left
-        enemy.pos.x > unit.pos.x,  # food right
-        enemy.pos.y < unit.pos.y,  # food up
-        enemy.pos.y > unit.pos.y,  # food down
+        enemies[0].pos.x < unit.pos.x if len(enemies) > 0 else 0,  # food left
+        enemies[0].pos.x > unit.pos.x if len(enemies) > 0 else 0,  # food right
+        enemies[0].pos.y < unit.pos.y if len(enemies) > 0 else 0,  # food up
+        enemies[0].pos.y > unit.pos.y if len(enemies) > 0 else 0,  # food down
     ]
 
     return np.array(state, dtype=float)
@@ -44,7 +51,7 @@ def play():
 
     battlemap, _, _ = generate_data(n)
     enemies, _ = generate_enemies(n)
-    allies = [Unit(30, 10, Pos(0, 0)), Unit(100, 5, Pos(n-3, n-3)), Unit(300, 10, Pos(0, n-3)), Unit(300, 20, Pos(n-3, 0))]
+    allies = [Unit(30, 10, Pos(1, 1)), Unit(100, 5, Pos(n-3, n-3)), Unit(300, 10, Pos(0, n-3)), Unit(300, 20, Pos(n-3, 0))]
     battle = BattlefieldAI(n, battlemap, enemies, [])
 
     for i, allie in enumerate(allies):
