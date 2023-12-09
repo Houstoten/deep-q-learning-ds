@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import jsonpickle
 from model import Linear_QNet
 from battlefield import generate_data, generate_enemies, Unit
 
@@ -47,19 +48,17 @@ def get_state(game, unit):
     return np.array(state, dtype=float)
 
 def play():
-    n = 80
+    n = 40
 
     battlemap, _, _ = generate_data(n)
     enemies, _ = generate_enemies(n)
     allies = [Unit(100, 10, Pos(1, 1)), Unit(100, 5, Pos(n-3, n-3)), Unit(300, 10, Pos(0, n-3)), Unit(300, 20, Pos(n-3, 0))]
     battle = BattlefieldAI(n, battlemap, enemies, allies)
-
-    # for i, allie in enumerate(allies):
-    #     battle.allies = allies[:i]
+    allie_path_list = [[allie.pos] for allie in allies]
 
     while(len(list(filter(lambda allie: allie.health > 0, battle.allies)))):
 
-        for allie in battle.allies:
+        for i, allie in enumerate(battle.allies):
             state = get_state(battle, allie)
 
             pred = model(torch.tensor(state, dtype=torch.float))
@@ -68,7 +67,10 @@ def play():
             pred_ = [1 if value == max_value else 0 for value in pred]
 
             reward, done, score = battle.play_step(pred_, allie)
+            allie_path_list[i].append(allie.pos)
         battle.tick_clock()
+
+    # print(jsonpickle.encode(allie_path_list, make_refs=False, unpicklable=False))
 
 if __name__ == '__main__':
     play()
