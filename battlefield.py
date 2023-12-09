@@ -43,8 +43,8 @@ def generate_enemies(n):
 
 window = pygame.display.set_mode((510,510))
 active = True
-n = 20
-scale = 500 / n
+# n = 20
+# scale = 500 / n
 
 WHITE = (255, 255, 255)
 RED = (200,0,0)
@@ -85,77 +85,82 @@ class Direction(Enum):
 
 class BattlefieldAI:
 
-    def __init__(self,  w=500, h=500):
+    def __init__(self, n, battlemap, enemies, allies, w=500, h=500):
         self.w = w
         self.h = h
+        self.n = n
+        self.scale = w / n
 
-        battlemap, enemies, enemymap = generate_data(n) 
+        # battlemap, enemies, enemymap = generate_data(n) 
         self.battlemap = battlemap
+        self.enemies = enemies
+        self.allies = allies
         # self.friendly_unit = Unit(100, 10, Pos(40, 40))
         # init display
         self.display = pygame.display.set_mode((self.w, self.h))
         pygame.display.set_caption('Battlefield')
         self.score = 0
         self.clock = pygame.time.Clock()
-        self.reset()
+        self.frame_iteration = 0
+        # self.reset()
 
     def reset(self):
         self.friendly_unit = Unit(300, 10, Pos(10, 10))
         self.frame_iteration = 0
         self.score = 0
-        self.enemies, self.enemymap = generate_enemies(n)
+        self.enemies, self.enemymap = generate_enemies(self.n)
 
-    def play_step(self, action):
+    def tick_clock(self):
+        self._update_ui()
+        self.clock.tick(20)
+
+    def play_step(self, action, allie):
         self.frame_iteration += 1
         # 1. collect user input
-        self._move(action) # update the head
+        self._move(action, allie) # update the head
 
-        pos_decay = self.battlemap[self.friendly_unit.pos.x][self.friendly_unit.pos.y]
-        self.friendly_unit.health -= pos_decay / 3
+        pos_decay = self.battlemap[allie.pos.x][allie.pos.y]
+        allie.health -= pos_decay / 3
         
         # 3. check if game over
         reward = 0
         game_over = False
-        if self.friendly_unit.health < 0:
+        if allie.health < 0:
             game_over = True
             reward = -1
             return reward, game_over, self.score
 
         # 4. check enemy or just move
         index, result = next(
-            ((index, enemy) for (index, enemy) in enumerate(self.enemies) if enemy.pos.x == self.friendly_unit.pos.x and enemy.pos.y == self.friendly_unit.pos.y and enemy.health > 0),
+            ((index, enemy) for (index, enemy) in enumerate(self.enemies) if enemy.pos.x == allie.pos.x and enemy.pos.y == allie.pos.y and enemy.health > 0),
             (None, None)
         )
 
         if result is not None:
-            result.health -= self.friendly_unit.damage
-            # result.health = 0
+            result.health -= allie.damage
             self.enemies[index] = result
-            self.friendly_unit.health -= result.damage
+            allie.health -= result.damage
             self.score += 1
-            # reward = 10 * result.threat
             reward = 1
         else:
-            # reward = -0.1
             reward = -1 -pos_decay
-            # reward = 0
 
         # 5. update ui and clock
 
         # temp
-        self._update_ui()
-        self.clock.tick(20)
+        # self._update_ui()
+        # self.clock.tick(20)
 
         # 6. return game over and score
-        print("Health: ", self.friendly_unit.health, " Score: ", self.score, end = "\r")
+        print("Health: ", allie.health, " Score: ", self.score, end = "\r")
         return reward, game_over, self.score
 
 
-    def is_collision(self, pt=None):
+    def is_collision(self, allie, pt=None):
         if pt is None:
-            pt = self.friendly_unit.pos
+            pt = allie.pos
         # hits boundary
-        if pt.x * scale >= self.w or pt.x < 0 or pt.y * scale >= self.h or pt.y < 0:
+        if pt.x * self.scale >= self.w or pt.x < 0 or pt.y * self.scale >= self.h or pt.y < 0:
             return True
 
         return False
@@ -165,18 +170,16 @@ class BattlefieldAI:
         self.display.fill(BLACK)
 
         for enemy in self.enemies:
-            if enemy.health > 0: pygame.draw.rect(window, (255, 1 / (255 * enemy.threat), 255 * enemy.threat), pygame.Rect(enemy.pos.x * scale, enemy.pos.y * scale, scale, scale))
+            if enemy.health > 0: pygame.draw.rect(window, (255, 1 / (255 * enemy.threat), 255 * enemy.threat), pygame.Rect(enemy.pos.x * self.scale, enemy.pos.y * self.scale, self.scale, self.scale))
 
-        pygame.draw.rect(window, (0,0,255), pygame.Rect(self.friendly_unit.pos.x * scale, self.friendly_unit.pos.y * scale, scale, scale))
-
-        # text = font.render("Health: " + str(self.friendly_unit.health), True, WHITE)
-        # self.display.blit(text, [0, 0])
+        for allie in self.allies:
+            if allie.health > 0: pygame.draw.rect(window, (0,0,255), pygame.Rect(allie.pos.x * self.scale, allie.pos.y * self.scale, self.scale, self.scale))
 
         pygame.display.flip()
 
-    def _move(self, action):
-        x = self.friendly_unit.pos.x
-        y = self.friendly_unit.pos.y
+    def _move(self, action, allie):
+        x = allie.pos.x
+        y = allie.pos.y
 
         if np.array_equal(action, [1, 0, 0, 0]):
             x += 1
@@ -187,19 +190,4 @@ class BattlefieldAI:
         else: 
             y -= 1
 
-        if not self.is_collision(Pos(x, y)): self.friendly_unit.pos = Pos(x, y)
-
-# if __name__ == '__main__':
-#     game = BattlefieldAI()
-    
-#     # game loop
-#     while True:
-#         reward, game_over, score = game.play_step()
-        
-#         if game_over == True:
-#             break
-        
-#     print('Final Score', score)
-        
-        
-#     pygame.quit()
+        if not self.is_collision(allie, Pos(x, y)): allie.pos = Pos(x, y)
