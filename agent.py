@@ -38,14 +38,27 @@ class Agent:
         # for enemy in game.enemies:
         #     acc_y = [acc_y[0] + enemy.health, acc_y[1]] if enemy.pos.y < game.friendly_unit.pos.y else [acc_y[0], acc_y[1] + enemy.health]
 
+        bm_w_r = game.battlemap[point_r.x][point_r.y] if not game.is_collision(point_r) else -1
+        bm_w_l = game.battlemap[point_l.x][point_l.y] if not game.is_collision(point_l) else -1
+        bm_w_u = game.battlemap[point_u.x][point_u.y] if not game.is_collision(point_u) else -1
+        bm_w_d = game.battlemap[point_d.x][point_d.y] if not game.is_collision(point_d) else -1
+
+        bm_w_min = min([bm_w_r, bm_w_l, bm_w_u, bm_w_d])
+
+
 
 
         state = [
             # Danger straight
-            (game.is_collision(point_r)),
-            (game.is_collision(point_l)),
-            (game.is_collision(point_u)),
-            (game.is_collision(point_d)),
+            # (game.is_collision(point_r)),
+            # (game.is_collision(point_l)),
+            # (game.is_collision(point_u)),
+            # (game.is_collision(point_d)),
+
+            bm_w_r == bm_w_min and bm_w_r != -1,
+            bm_w_l == bm_w_min and bm_w_l != -1,
+            bm_w_u == bm_w_min and bm_w_u != -1,
+            bm_w_d == bm_w_min and bm_w_d != -1,
 
 #####
             # (game.battlemap[point_r.x][point_r.y] > 0.5 if not  game.is_collision(point_r) else 0),
