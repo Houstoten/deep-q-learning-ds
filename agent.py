@@ -29,8 +29,9 @@ class Agent:
         point_u = Pos(unit.pos.x, unit.pos.y - 1)
         point_d = Pos(unit.pos.x, unit.pos.y + 1)
 
+
         sq_radius = 15
-        enemies = list(filter(lambda enemy: enemy.health > 0 and abs(enemy.pos.x - unit.pos.x) < sq_radius and abs(enemy.pos.y - unit.pos.y) < sq_radius, game.enemies))
+        enemies = sorted(list(filter(lambda enemy: enemy.health > 0 and abs(enemy.pos.x - unit.pos.x) < sq_radius and abs(enemy.pos.y - unit.pos.y) < sq_radius, game.enemies)), key=lambda e: e.health)
 
         # acc_x = [0, 0]
         # for enemy in game.enemies:

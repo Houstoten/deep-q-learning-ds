@@ -43,7 +43,7 @@ def generate_enemies(n):
 
 window = pygame.display.set_mode((510,510))
 active = True
-n = 20
+n = 50
 scale = 500 / n
 
 WHITE = (255, 255, 255)
@@ -119,8 +119,9 @@ class BattlefieldAI:
         game_over = False
 
         if collision:
-            reward = -1
-            # return reward, game_over, self.score
+            reward = -5
+            self._update_ui()
+            return reward, game_over, self.score
             
         if self.friendly_unit.health < 0:
             game_over = True
